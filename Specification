@@ -1,0 +1,26 @@
+Bagian I
+-----------
+
+Menuliskan kode java untuk mengakses weka:
+	Load data (arff & csv)
+	Remove attribute
+	Filterisasi : Resample
+	Build Classifier : NaiveBayes & DT
+	Testing model given test set
+	Save / Load Model
+	Using model to classify one unseen data
+
+Bagian II
+-----------
+
+Membuat classifier baru dengan menurunkan dari classifier weka:
+	Implementasi kelas baru: myID3 & myC45
+	Penanganan binary class & multiclass
+	Penanganan atribut diskrit dan kontinu
+
+Test data:
+	Weather
+	Iris
+
+
+Laporan : Source code; Hasil Eksekusi; Perbandingan dua algoritma
