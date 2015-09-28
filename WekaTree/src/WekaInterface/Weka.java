@@ -39,6 +39,13 @@ public class Weka {
     public Weka(){
         /* Constructor */
     }
+
+    /**
+     * @return the m_Training
+     */
+    public Instances getM_Training() {
+        return m_Training;
+    }
     
     /**
      * Set the type of Weka classifier
@@ -71,7 +78,7 @@ public class Weka {
         m_TrainingFile = filename;
         m_Training = new Instances(new BufferedReader(new FileReader(m_TrainingFile)));
         // By default set the class index to the last attribute
-        m_Training.setClassIndex(m_Training.numAttributes() - 1);
+        getM_Training().setClassIndex(getM_Training().numAttributes() - 1);
     }
     
     /**
@@ -80,14 +87,14 @@ public class Weka {
      * @throws java.lang.Exception
      */
     public void removeAttribute(String index) throws Exception{
-        System.out.println(m_Training.toString());
+        System.out.println(getM_Training().toString());
         
         String options[] = {"-R", index};
         setFilter("weka.filters.unsupervised.attribute.Remove", options);
-        m_Filter.setInputFormat(m_Training);
-        m_Training = Filter.useFilter(m_Training, m_Filter);
+        m_Filter.setInputFormat(getM_Training());
+        m_Training = Filter.useFilter(getM_Training(), m_Filter);
         
-        System.out.println(m_Training.toString());
+        System.out.println(getM_Training().toString());
     }
     
     /**
@@ -98,8 +105,8 @@ public class Weka {
     public void resample(String samplePercentage) throws Exception{
         String options[] = {"-Z", samplePercentage};
         setFilter("weka.filters.unsupervised.attribute.Remove", options);
-        m_Filter.setInputFormat(m_Training);
-        m_Training = Filter.useFilter(m_Training, m_Filter);
+        m_Filter.setInputFormat(getM_Training());
+        m_Training = Filter.useFilter(getM_Training(), m_Filter);
     }
     
     /**
@@ -112,14 +119,14 @@ public class Weka {
         // Run filter, NEXT TO-DO is handle the exception if there is no filter
         // m_Filter.setInputFormat(m_Training);
         // Instances filtered = Filter.useFilter(m_Training, m_Filter);
-        Instances filtered = m_Training;
+        Instances filtered = getM_Training();
         
         // Train the classifier
         m_Classifier.buildClassifier(filtered);
         
         // Evaluation, use 10 Cross Validation
         m_Evaluation = new Evaluation(filtered);
-        m_Evaluation.crossValidateModel(m_Classifier, filtered, 10, m_Training.getRandomNumberGenerator(1));
+        m_Evaluation.crossValidateModel(m_Classifier, filtered, 10, getM_Training().getRandomNumberGenerator(1));
         
         if(summary){
             System.out.println(m_Evaluation.toSummaryString("10 Cross Validation Result", true));
@@ -138,7 +145,7 @@ public class Weka {
         // Run filter, NEXT TO-DO is handle the exception if there is no filter
         //m_Filter.setInputFormat(m_Training);
         // Instances filtered = Filter.useFilter(m_Training, m_Filter);
-        Instances filtered = m_Training;
+        Instances filtered = getM_Training();
         
         // Train the classifier
         m_Classifier.buildClassifier(filtered);
@@ -223,4 +230,5 @@ public class Weka {
         
         weka.runCV(true);
     }
+
 }   
