@@ -41,7 +41,7 @@ public class Weka {
     }
     
     /**
-     * Build Weka classifier
+     * Set the type of Weka classifier
      * @param name The type of the classifier
      * @param options The set of options will be given to the classifier
      * @throws Exception 
@@ -51,7 +51,7 @@ public class Weka {
     }
     
     /**
-     * Build Weka filter
+     * Set the type of Weka filter
      * @param name Class name of the filter
      * @param options The set of options will be given to the filter
      * @throws Exception 
@@ -76,29 +76,43 @@ public class Weka {
     
     /**
      * Remove the specified attribute from the current Instance
-     * @param indexes numbers of attribute to be removed
+     * @param index numbers of attribute to be removed (e.g "1,2" / "first-last")
+     * @throws java.lang.Exception
      */
-    public void removeAttribute(int indexes[]){
-        if(indexes.length < m_Training.numAttributes()){
-            System.out.println("Error! Number of index > num of attribute.");
-        }
-        else{
-            for(int i = 0; i < indexes.length; i++){
-                m_Training.remove(indexes[i]);
-            }
-        }
+    public void removeAttribute(String index) throws Exception{
+        System.out.println(m_Training.toString());
+        
+        String options[] = {"-R", index};
+        setFilter("weka.filters.unsupervised.attribute.Remove", options);
+        m_Filter.setInputFormat(m_Training);
+        m_Training = Filter.useFilter(m_Training, m_Filter);
+        
+        System.out.println(m_Training.toString());
+    }
+    
+    /**
+     * Resample the training data
+     * @param samplePercentage number of percentage
+     * @throws Exception 
+     */
+    public void resample(String samplePercentage) throws Exception{
+        String options[] = {"-Z", samplePercentage};
+        setFilter("weka.filters.unsupervised.attribute.Remove", options);
+        m_Filter.setInputFormat(m_Training);
+        m_Training = Filter.useFilter(m_Training, m_Filter);
     }
     
     /**
      * Run the classifier using given filter parameter
-     * and training instances to build the training model
+     * and training instances with cross validation to build the training model
      * @param summary print the summary result if the value is true
      * @throws java.lang.Exception
      */
-    public void run(boolean summary) throws Exception{
+    public void runCV(boolean summary) throws Exception{
         // Run filter, NEXT TO-DO is handle the exception if there is no filter
-        m_Filter.setInputFormat(m_Training);
-        Instances filtered = Filter.useFilter(m_Training, m_Filter);
+        // m_Filter.setInputFormat(m_Training);
+        // Instances filtered = Filter.useFilter(m_Training, m_Filter);
+        Instances filtered = m_Training;
         
         // Train the classifier
         m_Classifier.buildClassifier(filtered);
@@ -114,6 +128,29 @@ public class Weka {
     }
     
     /**
+     * Run the classifier using given filter parameter
+     * and training instances with percentage split to build the training model
+     * @param summary print the summary result if the value is true
+     * @param splitPercentage the percentage of split
+     * @throws java.lang.Exception
+     */
+    public void runPS(boolean summary, String splitPercentage) throws Exception{
+        // Run filter, NEXT TO-DO is handle the exception if there is no filter
+        //m_Filter.setInputFormat(m_Training);
+        // Instances filtered = Filter.useFilter(m_Training, m_Filter);
+        Instances filtered = m_Training;
+        
+        // Train the classifier
+        m_Classifier.buildClassifier(filtered);
+        
+        // Evaluation, use 10 Cross Validation
+        m_Evaluation = new Evaluation(filtered);
+        //m_Evaluation.evaluateModel(m_Classifier, filtered, forPredictionsPrinting);
+        String options[] = {"-t", "weather.nominal.arff", "-split-percentage", splitPercentage};
+        System.out.println(Evaluation.evaluateModel(m_Classifier, options));
+    }
+    
+    /**
      * Save the training model
      * @param filename name of the saved model 
      */
@@ -122,7 +159,7 @@ public class Weka {
     }
     
     /**
-     * Load the model to filename
+     * Load the model from the filename
      * @param filename 
      */
     public void loadModel(String filename){
@@ -175,13 +212,15 @@ public class Weka {
     
     public static void main(String[] args) throws Exception{
         Weka weka = new Weka();
-        String[] options_cl = {"-U"};
+        
+        weka.setTraining("weather.nominal.arff");
+        
+        String[] options_cl = {""};
         weka.setClassifier("weka.classifiers.trees.J48", options_cl);
         
         String[] options_f= {""};
         weka.setFilter("weka.filters.unsupervised.instance.Randomize", options_f);
         
-        weka.setTraining("weather.nominal.arff");
-        weka.run(false);
+        weka.runCV(true);
     }
 }   
