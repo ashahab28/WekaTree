@@ -15,6 +15,7 @@ import weka.classifiers.Classifier;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.misc.SerializedClassifier;
+import weka.classifiers.trees.Id3;
 import weka.core.Debug;
 import weka.core.Instances;
 import weka.core.OptionHandler;
@@ -223,10 +224,16 @@ public class Weka {
         weka.setTraining("weather.nominal.arff");
         
         String[] options_cl = {""};
-        weka.setClassifier("weka.classifiers.trees.J48", options_cl);
+        //weka.setClassifier("weka.classifiers.trees.Id3", options_cl);
         
-        String[] options_f= {""};
-        weka.setFilter("weka.filters.unsupervised.instance.Randomize", options_f);
+        Classifier id3 = new Id3();
+        id3.buildClassifier(weka.getM_Training());
+        System.out.println(id3.toString());
+        
+        //weka.setClassifier("myID3.MyId3", options_cl);
+        
+        //String[] options_f= {""};
+        //weka.setFilter("weka.filters.unsupervised.instance.Randomize", options_f);
         
         weka.runCV(true);
     }
