@@ -48,6 +48,10 @@ public class Weka {
         return m_Training;
     }
     
+    public Evaluation getM_Evaluation(){
+        return m_Evaluation;
+    }
+    
     /**
      * Set the type of Weka classifier
      * @param name The type of the classifier
@@ -123,7 +127,8 @@ public class Weka {
         Instances filtered = getM_Training();
         
         // Train the classifier
-        m_Classifier.buildClassifier(filtered);
+        m_Classifier.buildClassifier(m_Training);
+        
         
         // Evaluation, use 10 Cross Validation
         m_Evaluation = new Evaluation(filtered);
@@ -224,7 +229,7 @@ public class Weka {
         weka.setTraining("weather.nominal.arff");
         
         String[] options_cl = {""};
-        weka.setClassifier("myID3.MyId3", options_cl);
+        weka.setClassifier("myJ48.MyJ48", options_cl);
 
         //String[] options_f= {""};
         //weka.setFilter("weka.filters.unsupervised.instance.Randomize", options_f);

@@ -13,6 +13,7 @@ import java.util.Enumeration;
 import java.util.List;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
+import weka.classifiers.Evaluation;
 import weka.core.Attribute;
 import weka.core.Capabilities;
 import weka.core.Capabilities.Capability;
@@ -31,19 +32,38 @@ public class MyJ48 extends AbstractClassifier{
     
     /** Attribute of this class */
     
-    private MyJ48[] nodes;
+    public MyJ48[] nodes;
     
     // For splitting the tree
-    private Attribute currentAttribute;
+    public Attribute currentAttribute;
     
     // If leaf, then the value is class value
-    private double classValue;
+    public double classValue;
     
     // Class distribution (if leaf)
-    private double[] classDistribution;
+    public double[] classDistribution;
     
     // Attribute identity for the class of the node (if leaf)
-    private Attribute classAttribute;
+    public Attribute classAttribute;
+    
+    //
+    public MyJ48 predecessor;
+    
+    //a
+    public double initAccuracy;
+    
+    public boolean visited;
+        
+    public boolean classify;
+    
+    public MyJ48(){
+        visited = false;
+    }
+    
+    public MyJ48(MyJ48 myJ48){
+        visited = false;
+        this.predecessor = myJ48;
+    }
     
     /**
      * Build an Id3 classifier
@@ -52,6 +72,13 @@ public class MyJ48 extends AbstractClassifier{
      */
     @Override
     public void buildClassifier(Instances instances) throws Exception {
+        
+         if(instances == null){
+                    //System.out.println("instances null");
+                }
+                else{
+                    //System.out.println("instances ga null");
+                }
         
         // Detecting the instance type, can Id3 handle the data?
         getCapabilities().testWithFail(instances);
@@ -62,6 +89,24 @@ public class MyJ48 extends AbstractClassifier{
         
         // Build the id3
         buildTree(data);
+        
+        Weka weka = new Weka();
+        String[] options_cl = {""};
+        weka.setTraining("weather.nominal.arff");
+        weka.setClassifier("weka.classifiers.trees.J48", options_cl);
+
+        weka.runCV(false);
+        
+        initAccuracy = weka.getM_Evaluation().correct();
+        
+         if(data == null){
+                    //System.out.println("data null");
+                }
+                else{
+                    //System.out.println("data ga null");
+                }
+        
+        pruneTree(data);
     }
     
     /**
@@ -69,7 +114,7 @@ public class MyJ48 extends AbstractClassifier{
      * Find the highest attribute value which best at dividing the data
      * @param data Instance
      */
-    public void buildTree(Instances data){
+    public void buildTree(Instances data) throws Exception{
         if(data.numInstances() > 0){
             // Lets find the highest Information Gain!
             // First compute each information gain attribute
@@ -104,7 +149,7 @@ public class MyJ48 extends AbstractClassifier{
                 nodes = new MyJ48[currentAttribute.numValues()];
                 
                 for (int i = 0; i < currentAttribute.numValues(); i++) {
-                    nodes[i] = new MyJ48();
+                    nodes[i] = new MyJ48(this);
                     nodes[i].buildTree(splitData[i]);
                 }
             }
@@ -114,6 +159,62 @@ public class MyJ48 extends AbstractClassifier{
             classValue = Utils.missingValue();
             classDistribution = new double[data.numClasses()];
         }
+        
+    }
+    
+    /**
+     * Construct the tree using the given instance
+     * Find the highest attribute value which best at dividing the data
+     * @param data Instance
+     */
+    public void pruneTree2(Instances data) throws Exception{
+        if (currentAttribute == null) {
+            Attribute tempAttr = predecessor.currentAttribute;  
+            predecessor.currentAttribute = null;
+            // Set the class value as the highest frequency of the class
+            classDistribution = new double[data.numClasses()];
+            Enumeration enumInstance = data.enumerateInstances();
+            while(enumInstance.hasMoreElements()){
+                Instance temp = (Instance)enumInstance.nextElement();
+                classDistribution[(int) temp.classValue()]++;
+            }
+            Utils.normalize(classDistribution);
+            predecessor.classValue = Utils.maxIndex(classDistribution);
+            predecessor.classAttribute = data.classAttribute();
+            Weka weka = new Weka();
+            weka.setTraining("weather.nominal.arff");
+            String[] options_cl = {""};
+            weka.setClassifier("myJ48.MyJ48", options_cl);
+            
+            weka.runCV(true);
+            double currentAccuracy = weka.getM_Evaluation().correct();
+            double maxFalseAccuracy = initAccuracy * 0.9;
+            
+            if(maxFalseAccuracy > currentAccuracy){
+                predecessor.currentAttribute = tempAttr;
+                visited = true;
+            }
+            else{
+                visited = false;
+            }
+        }
+        else if(visited){
+        }
+        else {
+            for (int j = 0; j < currentAttribute.numValues(); j++) {
+                if(nodes[j] == null){
+                    //System.out.println("null nodes");
+                }
+                else{
+                    //System.out.println("ga null");
+                }
+                nodes[j].pruneTree(data);
+           }
+        }
+    }
+    
+    public MyJ48 pruneTree(Instances data) throws Exception{
+        
     }
     
     /**
