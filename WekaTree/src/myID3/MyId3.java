@@ -7,9 +7,11 @@ package myID3;
 
 import WekaInterface.Weka;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Enumeration;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
+import weka.classifiers.trees.Id3;
 import weka.core.Attribute;
 import weka.core.Capabilities;
 import weka.core.Capabilities.Capability;
@@ -73,9 +75,11 @@ public class MyId3 extends AbstractClassifier{
             while(enumAttribute.hasMoreElements()){
                 Attribute attribute = (Attribute)enumAttribute.nextElement();
                 IG[attribute.index()] = informationGain(data, attribute);
+                // System.out.println(attribute.toString() + ": " + IG[attribute.index()]);
             }
             // Assign it as the tree attribute!
-            currentAttribute = data.attribute(Utils.maxIndex(IG));
+            currentAttribute = data.attribute(maxIndex(IG));
+            //System.out.println(Arrays.toString(IG) + IG[currentAttribute.index()]);
             
             // IG = 0 then current node = leaf!
             if(Utils.eq(IG[currentAttribute.index()], 0)){
@@ -95,9 +99,9 @@ public class MyId3 extends AbstractClassifier{
                 // Create another node from the current tree
                 Instances[] splitData = splitDataByAttribute(data, currentAttribute);
                 nodes = new MyId3[currentAttribute.numValues()];
+                
                 for (int i = 0; i < currentAttribute.numValues(); i++) {
                     nodes[i] = new MyId3();
-                    System.out.println();
                     nodes[i].buildTree(splitData[i]);
                 }
             }
@@ -131,8 +135,10 @@ public class MyId3 extends AbstractClassifier{
             if(subSet[i].numInstances() > 0) entropy[i] = entropy(subSet[i]);
             else entropy[i] = 0;
         }
+        System.out.println(attribute.toString() + " " + Arrays.toString(entropy) + "\n");
         
         double IG = initEntropy;
+        
         for (int i = 0; i < attribute.numValues(); i++) {
             IG = IG - (entropy[i]*(double)subSet[i].numInstances()/data.numInstances());
         }
@@ -159,15 +165,18 @@ public class MyId3 extends AbstractClassifier{
             /* Count the p1, p2 */
             distribution[(int)temp.classValue()] ++;
         }
+        
 
         /* Sum all the distribution */
         double sum = 0;
         for(int i = 0; i < numClass; i++){
             distribution[i] = distribution[i]/numInstance;
-            distribution[i] *= Utils.log2(distribution[i]);
+            if(distribution[i] > 0.0)
+                distribution[i] *= Utils.log2(distribution[i]);
+            System.out.println(Arrays.toString(distribution));
             sum += distribution[i];
         }
-
+            
         return -1 * sum;
     }
     
@@ -195,6 +204,7 @@ public class MyId3 extends AbstractClassifier{
         // Compact the array of object by removing the empty array
         for (int i = 0; i < attribute.numValues(); i++) {
             subSet[i].compactify();
+            // System.out.println(subSet[i]);
         }
         
         return subSet;
@@ -222,52 +232,106 @@ public class MyId3 extends AbstractClassifier{
         return id3_capability;
     }
     
+    private int maxIndex(double[] arr){        
+        double max_val = 0;
+        int max_index = 0;
+        for(int i = 0; i < arr.length; i++){
+            if(arr[i] == Double.NaN){
+                arr[i] = -9.9;
+            }
+            
+            if(max_val <= arr[i]){
+                max_val = arr[i];
+                max_index = i;
+            }
+        }
+        return max_index;
+    }
+    
     /**
-   * Classifies a given test instance using the decision tree.
-   *
-   * @param instance the instance to be classified
-   * @return the classification
-   * @throws NoSupportForMissingValuesException if instance has missing values
-   */
-  public double classifyInstance(Instance instance) throws NoSupportForMissingValuesException {
-    if (instance.hasMissingValue()) {
-      throw new NoSupportForMissingValuesException("Id3: no missing values, "
-                                                   + "please.");
-    }
-    if (currentAttribute == null) {
-      return classValue;
-    } else {
-      return nodes[(int) instance.value(currentAttribute)].
-        classifyInstance(instance);
-    }
-  }
+    * Classifies a given test instance using the decision tree.
+    *
+    * @param instance the instance to be classified
+    * @return the classification
+    * @throws NoSupportForMissingValuesException if instance has missing values
+    */
+   public double classifyInstance(Instance instance) throws NoSupportForMissingValuesException {
+     if (instance.hasMissingValue()) {
+       throw new NoSupportForMissingValuesException("Id3: no missing values, "
+                                                    + "please.");
+     }
+     if (currentAttribute == null) {
+       return classValue;
+     } else {
+       return nodes[(int) instance.value(currentAttribute)].
+         classifyInstance(instance);
+     }
+   }
 
-  /**
-   * Computes class distribution for instance using decision tree.
+   /**
+    * Computes class distribution for instance using decision tree.
+    *
+    * @param instance the instance for which distribution is to be computed
+    * @return the class distribution for the given instance
+    * @throws NoSupportForMissingValuesException if instance has missing values
+    */
+   public double[] distributionForInstance(Instance instance) throws NoSupportForMissingValuesException {
+     if (instance.hasMissingValue()) {
+       throw new NoSupportForMissingValuesException("Id3: no missing values, "
+                                                    + "please.");
+     }
+     if (currentAttribute == null) {
+       return classDistribution;
+     } else { 
+       return nodes[(int) instance.value(currentAttribute)].
+         distributionForInstance(instance);
+     }
+   }
+   
+   /**
+   * Prints the decision tree using the private toString method from below.
    *
-   * @param instance the instance for which distribution is to be computed
-   * @return the class distribution for the given instance
-   * @throws NoSupportForMissingValuesException if instance has missing values
+   * @return a textual description of the classifier
    */
-  public double[] distributionForInstance(Instance instance) throws NoSupportForMissingValuesException {
-    if (instance.hasMissingValue()) {
-      throw new NoSupportForMissingValuesException("Id3: no missing values, "
-                                                   + "please.");
+    @Override
+  public String toString() {
+
+    if ((classDistribution == null) && (nodes == null)) {
+      return "Id3: No model built yet.";
     }
-    if (currentAttribute == null) {
-      return classDistribution;
-    } else { 
-      return nodes[(int) instance.value(currentAttribute)].
-        distributionForInstance(instance);
-    }
+    return "Id3\n\n" + printTree(0);
   }
-  
-  public static void main(String[] args) throws IOException, Exception{
-      Weka a = new Weka();
-      a.setTraining("weather.nominal.arff");
-      Classifier b = new MyId3();
-      b.buildClassifier(a.getM_Training());
-  }
+   
+   public String printTree(int level){
+       StringBuilder text = new StringBuilder();
+    
+        if (currentAttribute == null) {
+          if (Utils.isMissingValue(classValue)) {
+            text.append(": null");
+          } else {
+            text.append(": ").append(classAttribute.value((int) classValue));
+          } 
+        } else {
+          for (int j = 0; j < currentAttribute.numValues(); j++) {
+            text.append("\n");
+            for (int i = 0; i < level; i++) {
+              text.append("|  ");
+            }
+            text.append(currentAttribute.name()).append(" = ").append(currentAttribute.value(j));
+            text.append(nodes[j].printTree(level + 1));
+          }
+        }
+        return text.toString();
+   }
+
+   public static void main(String[] args) throws IOException, Exception{
+       Weka a = new Weka();
+       a.setTraining("weather.nominal.arff");
+       Classifier b = new MyId3();
+       b.buildClassifier(a.getM_Training());
+       System.out.println(b.toString());
+       
+   }
   
 //                outlook = sunny
 //              |  humidity = high: no
