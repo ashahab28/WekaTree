@@ -224,17 +224,14 @@ public class Weka {
         weka.setTraining("weather.nominal.arff");
         
         String[] options_cl = {""};
-        //weka.setClassifier("weka.classifiers.trees.Id3", options_cl);
-        
-        Classifier id3 = new Id3();
-        id3.buildClassifier(weka.getM_Training());
-        System.out.println(id3.toString());
-        
-        //weka.setClassifier("myID3.MyId3", options_cl);
-        
+        weka.setClassifier("myID3.MyId3", options_cl);
+
         //String[] options_f= {""};
         //weka.setFilter("weka.filters.unsupervised.instance.Randomize", options_f);
         
+        weka.runCV(true);
+        
+        weka.setClassifier("weka.classifiers.trees.Id3", options_cl);
         weka.runCV(true);
     }
 

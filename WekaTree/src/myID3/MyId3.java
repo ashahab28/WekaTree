@@ -7,11 +7,9 @@ package myID3;
 
 import WekaInterface.Weka;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Enumeration;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
-import weka.classifiers.trees.Id3;
 import weka.core.Attribute;
 import weka.core.Capabilities;
 import weka.core.Capabilities.Capability;
@@ -135,7 +133,7 @@ public class MyId3 extends AbstractClassifier{
             if(subSet[i].numInstances() > 0) entropy[i] = entropy(subSet[i]);
             else entropy[i] = 0;
         }
-        System.out.println(attribute.toString() + " " + Arrays.toString(entropy) + "\n");
+        //System.out.println(attribute.toString() + " " + Arrays.toString(entropy) + "\n");
         
         double IG = initEntropy;
         
@@ -173,7 +171,7 @@ public class MyId3 extends AbstractClassifier{
             distribution[i] = distribution[i]/numInstance;
             if(distribution[i] > 0.0)
                 distribution[i] *= Utils.log2(distribution[i]);
-            System.out.println(Arrays.toString(distribution));
+            // System.out.println(Arrays.toString(distribution));
             sum += distribution[i];
         }
             
@@ -255,18 +253,18 @@ public class MyId3 extends AbstractClassifier{
     * @return the classification
     * @throws NoSupportForMissingValuesException if instance has missing values
     */
-   public double classifyInstance(Instance instance) throws NoSupportForMissingValuesException {
-     if (instance.hasMissingValue()) {
-       throw new NoSupportForMissingValuesException("Id3: no missing values, "
-                                                    + "please.");
-     }
-     if (currentAttribute == null) {
-       return classValue;
-     } else {
-       return nodes[(int) instance.value(currentAttribute)].
-         classifyInstance(instance);
-     }
-   }
+    public double classifyInstance(Instance instance) throws NoSupportForMissingValuesException {
+      if (instance.hasMissingValue()) {
+        throw new NoSupportForMissingValuesException("Id3: no missing values, "
+                                                     + "please.");
+      }
+      if (currentAttribute == null) {
+        return classValue;
+      } else {
+        return nodes[(int) instance.value(currentAttribute)].
+          classifyInstance(instance);
+      }
+    }
 
    /**
     * Computes class distribution for instance using decision tree.
@@ -275,54 +273,54 @@ public class MyId3 extends AbstractClassifier{
     * @return the class distribution for the given instance
     * @throws NoSupportForMissingValuesException if instance has missing values
     */
-   public double[] distributionForInstance(Instance instance) throws NoSupportForMissingValuesException {
-     if (instance.hasMissingValue()) {
-       throw new NoSupportForMissingValuesException("Id3: no missing values, "
-                                                    + "please.");
-     }
-     if (currentAttribute == null) {
-       return classDistribution;
-     } else { 
-       return nodes[(int) instance.value(currentAttribute)].
-         distributionForInstance(instance);
-     }
-   }
-   
-   /**
-   * Prints the decision tree using the private toString method from below.
-   *
-   * @return a textual description of the classifier
-   */
-    @Override
-  public String toString() {
-
-    if ((classDistribution == null) && (nodes == null)) {
-      return "Id3: No model built yet.";
+    public double[] distributionForInstance(Instance instance) throws NoSupportForMissingValuesException {
+      if (instance.hasMissingValue()) {
+        throw new NoSupportForMissingValuesException("Id3: no missing values, "
+                                                     + "please.");
+      }
+      if (currentAttribute == null) {
+        return classDistribution;
+      } else { 
+        return nodes[(int) instance.value(currentAttribute)].
+          distributionForInstance(instance);
+      }
     }
-    return "Id3\n\n" + printTree(0);
-  }
    
-   public String printTree(int level){
-       StringBuilder text = new StringBuilder();
-    
-        if (currentAttribute == null) {
-          if (Utils.isMissingValue(classValue)) {
-            text.append(": null");
-          } else {
-            text.append(": ").append(classAttribute.value((int) classValue));
-          } 
-        } else {
-          for (int j = 0; j < currentAttribute.numValues(); j++) {
-            text.append("\n");
-            for (int i = 0; i < level; i++) {
-              text.append("|  ");
-            }
-            text.append(currentAttribute.name()).append(" = ").append(currentAttribute.value(j));
-            text.append(nodes[j].printTree(level + 1));
-          }
-        }
-        return text.toString();
-   }
+    /**
+    * Prints the decision tree using the private toString method from below.
+    *
+    * @return a textual description of the classifier
+    */
+    @Override
+    public String toString() {
+
+      if ((classDistribution == null) && (nodes == null)) {
+        return "Id3: No model built yet.";
+      }
+      return "Id3\n\n" + printTree(0);
+    }
+   
+    public String printTree(int level){
+        StringBuilder text = new StringBuilder();
+
+         if (currentAttribute == null) {
+           if (Utils.isMissingValue(classValue)) {
+             text.append(": null");
+           } else {
+             text.append(": ").append(classAttribute.value((int) classValue));
+           } 
+         } else {
+           for (int j = 0; j < currentAttribute.numValues(); j++) {
+             text.append("\n");
+             for (int i = 0; i < level; i++) {
+               text.append("|  ");
+             }
+             text.append(currentAttribute.name()).append(" = ").append(currentAttribute.value(j));
+             text.append(nodes[j].printTree(level + 1));
+           }
+         }
+         return text.toString();
+    }
 
    public static void main(String[] args) throws IOException, Exception{
        Weka a = new Weka();
@@ -330,14 +328,5 @@ public class MyId3 extends AbstractClassifier{
        Classifier b = new MyId3();
        b.buildClassifier(a.getM_Training());
        System.out.println(b.toString());
-       
    }
-  
-//                outlook = sunny
-//              |  humidity = high: no
-//              |  humidity = normal: yes
-//              outlook = overcast: yes
-//              outlook = rainy
-//              |  windy = TRUE: no
-//              |  windy = FALSE: yes
 }
