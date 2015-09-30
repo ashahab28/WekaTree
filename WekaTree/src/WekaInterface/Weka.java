@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import myJ48.MyJ48;
 import weka.classifiers.Classifier;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Evaluation;
@@ -125,14 +126,17 @@ public class Weka {
         // m_Filter.setInputFormat(m_Training);
         // Instances filtered = Filter.useFilter(m_Training, m_Filter);
         Instances filtered = getM_Training();
+       
+        myJ48.MyJ48 nominator = new MyJ48();
+        
+        m_Training = nominator.NumericToNominal(m_Training);
         
         // Train the classifier
         m_Classifier.buildClassifier(m_Training);
-        
-        
+       
         // Evaluation, use 10 Cross Validation
         m_Evaluation = new Evaluation(filtered);
-        m_Evaluation.crossValidateModel(m_Classifier, filtered, 10, getM_Training().getRandomNumberGenerator(1));
+        m_Evaluation.crossValidateModel(m_Classifier, m_Training, 10, m_Training.getRandomNumberGenerator(1));
         
         if(summary){
             System.out.println(m_Evaluation.toSummaryString("10 Cross Validation Result", true));
@@ -226,17 +230,13 @@ public class Weka {
     public static void main(String[] args) throws Exception{
         Weka weka = new Weka();
         
-        weka.setTraining("weather.nominal.arff");
+        weka.setTraining("iris.arff");
         
         String[] options_cl = {""};
         weka.setClassifier("myJ48.MyJ48", options_cl);
-
-        //String[] options_f= {""};
-        //weka.setFilter("weka.filters.unsupervised.instance.Randomize", options_f);
-        
         weka.runCV(true);
         
-        weka.setClassifier("weka.classifiers.trees.Id3", options_cl);
+        weka.setClassifier("weka.classifiers.trees.J48", options_cl);
         weka.runCV(true);
     }
 

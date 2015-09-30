@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Random;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
@@ -49,7 +50,6 @@ public class MyJ48 extends AbstractClassifier{
     //
     public MyJ48 predecessor;
     
-    //a
     public double initAccuracy;
     
     public boolean visited;
@@ -87,6 +87,12 @@ public class MyJ48 extends AbstractClassifier{
         Instances data = new Instances(instances);
         data.deleteWithMissingClass();
         
+        //Numeric to Nominal
+        data = NumericToNominal(data);
+        //System.out.println(data);
+        //System.out.println(data.numAttributes());
+        
+        
         // Build the id3
         buildTree(data);
         
@@ -106,7 +112,7 @@ public class MyJ48 extends AbstractClassifier{
                     //System.out.println("data ga null");
                 }
         
-        pruneTree(data);
+        //pruneTree(data);
     }
     
     /**
@@ -214,8 +220,62 @@ public class MyJ48 extends AbstractClassifier{
     }
     
     public MyJ48 pruneTree(Instances data) throws Exception{
-        
+        if(currentAttribute==null){
+            return this;
+        }
+        else{
+            
+        }
+        if(currentAttribute != null){
+            for (int i = 0; i < currentAttribute.numValues(); i++) {
+                boolean succLeaf = true;
+                if(nodes[i].currentAttribute != null){
+                    for(int j = 0; j < nodes[i].currentAttribute.numValues(); j++){
+                        succLeaf = (succLeaf && (nodes[i].nodes[j].currentAttribute == null));
+                    }
+                    if(succLeaf){
+                        Attribute tempAttr = nodes[i].currentAttribute;  
+                        nodes[i].currentAttribute = null;
+                        // Set the class value as the highest frequency of the class
+                        classDistribution = new double[data.numClasses()];
+                        Enumeration enumInstance = data.enumerateInstances();
+                        while(enumInstance.hasMoreElements()){
+                            Instance temp = (Instance)enumInstance.nextElement();
+                            classDistribution[(int) temp.classValue()]++;
+                        }
+                        Utils.normalize(classDistribution);
+                        nodes[i].classValue = Utils.maxIndex(classDistribution);
+                        nodes[i].classAttribute = data.classAttribute();
+                        /*Weka weka = new Weka();
+                        weka.setTraining("weather.nominal.arff");
+                        String[] options_cl = {""};
+                        weka.setClassifier("myJ48.MyJ48", options_cl);
+
+                        weka.runCV(true);
+                        double currentAccuracy = weka.getM_Evaluation().correct();*/
+                        Random rand = new Random();
+                        double currentAccuracy = rand.nextDouble();
+                        System.out.println("acc kepake : " + currentAccuracy);
+
+                        double maxFalseAccuracy =  0.7; // coba coba
+
+                        if(maxFalseAccuracy > currentAccuracy){
+                            nodes[i].currentAttribute = tempAttr;
+                            //visited = true;
+                        }
+                        else{
+                            //visited = false;
+                        }
+                    }
+                }
+                else{
+                    nodes[i] = nodes[i].pruneTree(data);
+                }
+            }
+        }
+        return this;
     }
+    
     
     /**
      * Count the information gain for selected attribute 
@@ -315,25 +375,26 @@ public class MyJ48 extends AbstractClassifier{
     }
     
     /**
-     * Capability of id3 classifier
+     * Capability of j48 classifier
      * @return 
      */
     @Override
     public Capabilities getCapabilities(){
-        Capabilities id3_capability = super.getCapabilities();
-        id3_capability.disableAll();
+        Capabilities J48_capability = super.getCapabilities();
+        J48_capability.disableAll();
         
         // Attribute type capability
-        id3_capability.enable(Capability.NOMINAL_ATTRIBUTES);
+        J48_capability.enable(Capability.NOMINAL_ATTRIBUTES);
+        J48_capability.enable(Capability.NUMERIC_ATTRIBUTES);
         
         // Class capability
-        id3_capability.enable(Capability.NOMINAL_CLASS);
-        id3_capability.enable(Capability.MISSING_CLASS_VALUES);
+        J48_capability.enable(Capability.NOMINAL_CLASS);
+        J48_capability.enable(Capability.MISSING_CLASS_VALUES);
         
         // Minimum number of instances allowed to be use
-        id3_capability.setMinimumNumberInstances(0);
+        J48_capability.setMinimumNumberInstances(0);
         
-        return id3_capability;
+        return J48_capability;
     }
     
     private int maxIndex(double[] arr){        
@@ -381,8 +442,7 @@ public class MyJ48 extends AbstractClassifier{
     */
     public double[] distributionForInstance(Instance instance) throws NoSupportForMissingValuesException {
       if (instance.hasMissingValue()) {
-        throw new NoSupportForMissingValuesException("Id3: no missing values, "
-                                                     + "please.");
+        throw new NoSupportForMissingValuesException("Missing value error");
       }
       if (currentAttribute == null) {
         return classDistribution;
@@ -428,7 +488,7 @@ public class MyJ48 extends AbstractClassifier{
          return text.toString();
     }
     
-    public void NumericToNominal(Instances numericSet) throws Exception {
+    public Instances NumericToNominal(Instances numericSet) throws Exception {
         //TODO: cek atribut numerik
         double maxIG, curIG;
         int maxIdx;
@@ -442,22 +502,19 @@ public class MyJ48 extends AbstractClassifier{
                 //Instances[] NominalizedSets = new Instances[numericSet.numInstances()];
                 for(int ix=0;ix<numericSet.numInstances();ix++){
                     tempSet = NumericToNominalByThreshold(numericSet, i, numericSet.instance(ix).value(i));
-                    //System.out.println(tempSet);
-                    //System.out.println(tempSet.attribute(i));
-                    //System.exit(1);
                     curIG = informationGain(tempSet, tempSet.attribute(i));
-                    System.out.println("by value index: " + ix + " IG: " + curIG);
                     if(maxIG<curIG){
                         maxIG = curIG;
                         maxIdx = ix;
                     }
                 }
                 numericSet = NumericToNominalByThreshold(numericSet, i, numericSet.instance(maxIdx).value(i));
-                System.out.println("Nominalized by attribute " + numericSet.attribute(i).name() + " :\n" + numericSet.toString());
-                System.out.println("max index: "+ maxIdx);
-                System.out.println("max IG: " + informationGain(numericSet, numericSet.attribute(i)));
+//                System.out.println("Nominalized by attribute " + numericSet.attribute(i).name() + " :\n" + numericSet.toString());
+//                System.out.println("max index: "+ maxIdx);
+//                System.out.println("max IG: " + informationGain(numericSet, numericSet.attribute(i)));
             }
         }
+        return numericSet;
     }
     
     public Instances NumericToNominalByThreshold(Instances numericSet, int idx_attribute, double threshold) throws Exception{
@@ -486,11 +543,4 @@ public class MyJ48 extends AbstractClassifier{
         
         return NominalizedSet;
     }
-
-   public static void main(String[] args) throws IOException, Exception{
-        Weka wk = new Weka();
-        wk.setTraining("iris.2D.arff");
-        MyJ48 j48 = new MyJ48();
-        j48.NumericToNominal(wk.getM_Training());
-   }
 }
